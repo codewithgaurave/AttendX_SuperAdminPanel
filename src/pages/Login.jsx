@@ -5,18 +5,18 @@ import { toast } from '../components/Toast';
 import { Eye, EyeOff, LogIn, Crown } from 'lucide-react';
 
 export default function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ phone: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) {
+    if (!form.phone || !form.password) {
       return toast('Please fill all fields');
     }
 
-    const success = await login(form.email, form.password, 'superadmin');
+    const success = await login(form.phone, form.password, 'superadmin');
     if (success) {
       navigate('/dashboard');
     }
@@ -65,13 +65,13 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email Address</label>
+            <label>Phone Number</label>
             <input
               className="form-inp"
-              type="email"
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              type="tel"
+              placeholder="Enter your phone number"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
               disabled={loading}
             />
           </div>

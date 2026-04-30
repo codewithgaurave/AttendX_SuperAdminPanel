@@ -26,7 +26,7 @@ function ProtectedRoute({ children }) {
   }
   
   // Only allow superadmin role
-  if (auth.user?.role !== 'superadmin') {
+  if (auth.role !== 'superadmin') {
     return <Navigate to="/login" replace />;
   }
   
