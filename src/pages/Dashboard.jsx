@@ -88,7 +88,14 @@ export default function Dashboard() {
 
 function ProfilePanel({ onNavigate, onLogout, auth }) {
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [profileForm, setProfileForm] = useState({
+    name: auth?.user?.name || '',
+    email: auth?.user?.email || '',
+    phone: auth?.user?.phone || '',
+    company: auth?.user?.company || ''
+  });
   const [loading, setLoading] = useState(false);
 
   const openMasterAdminWhatsApp = () => {
@@ -126,6 +133,45 @@ function ProfilePanel({ onNavigate, onLogout, auth }) {
     }
   };
 
+  const updateProfile = async () => {
+    if (!profileForm.name || !profileForm.phone) {
+      return Swal.fire('Error', 'Name and phone are required', 'error');
+    }
+    if (profileForm.phone.length < 10) {
+      return Swal.fire('Error', 'Phone number must be at least 10 digits', 'error');
+    }
+    if (profileForm.email && !profileForm.email.includes('@')) {
+      return Swal.fire('Error', 'Please enter a valid email address', 'error');
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await api.patch('/superadmin/profile', profileForm);
+      
+      // Update auth context with new user data
+      const updatedAuth = {
+        ...auth,
+        user: {
+          ...auth.user,
+          ...data.user
+        }
+      };
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(updatedAuth.user));
+      
+      Swal.fire('Success', 'Profile updated successfully!', 'success');
+      setShowEditProfile(false);
+      
+      // Refresh page to show updated data
+      window.location.reload();
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.message || 'Failed to update profile', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
       {/* User card */}
@@ -135,12 +181,35 @@ function ProfilePanel({ onNavigate, onLogout, auth }) {
         </div>
         <div>
           <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: 'var(--bg)' }}>{auth?.user?.name}</div>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{auth?.user?.email}</div>
+          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{auth?.user?.phone}</div>
+          {auth?.user?.email && (
+            <div style={{ fontSize: 11, color: '#666', marginTop: 1 }}>{auth?.user?.email}</div>
+          )}
+          {auth?.user?.company && (
+            <div style={{ fontSize: 11, color: '#666', marginTop: 1 }}>{auth?.user?.company}</div>
+          )}
           <div style={{ marginTop: 6 }}>
             <span style={{ background: 'var(--accent)', color: '#fff', padding: '2px 10px', borderRadius: 2, fontSize: 10, fontFamily: 'DM Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>
               Super Admin
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Edit Profile */}
+      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 16 }}>
+        <div onClick={() => setShowEditProfile(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', cursor: 'pointer', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          <div style={{ width: 38, height: 38, borderRadius: 4, background: 'var(--surface2)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink2)', flexShrink: 0 }}>
+            <UserCircle size={18} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>Edit Profile</div>
+            <div style={{ fontSize: 12, color: 'var(--ink2)', marginTop: 2 }}>Update your profile information</div>
+          </div>
+          <ChevronRight size={16} color="var(--ink2)" />
         </div>
       </div>
 
@@ -194,6 +263,84 @@ function ProfilePanel({ onNavigate, onLogout, auth }) {
           <ChevronRight size={16} color="var(--ink2)" />
         </div>
       </div>
+      
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && setShowEditProfile(false)}>
+          <div className="modal" style={{ maxWidth: 500 }}>
+            <div className="modal-title">
+              Edit Profile
+              <button className="modal-close" onClick={() => setShowEditProfile(false)}>✕</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div className="form-group">
+                <label>Name *</label>
+                <input 
+                  className="form-inp" 
+                  value={profileForm.name}
+                  onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Enter your name"
+                  disabled={loading}
+                />
+              </div>
+              <div className="form-group">
+                <label>Phone *</label>
+                <input 
+                  className="form-inp" 
+                  value={profileForm.phone}
+                  onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="Enter phone number"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div className="form-group">
+                <label>Email</label>
+                <input 
+                  className="form-inp" 
+                  type="email"
+                  value={profileForm.email}
+                  onChange={e => setProfileForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="Enter email address"
+                  disabled={loading}
+                />
+              </div>
+              <div className="form-group">
+                <label>Company</label>
+                <input 
+                  className="form-inp" 
+                  value={profileForm.company}
+                  onChange={e => setProfileForm(f => ({ ...f, company: e.target.value }))}
+                  placeholder="Enter company name"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button 
+                className="btn" 
+                onClick={() => setShowEditProfile(false)}
+                disabled={loading}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={updateProfile}
+                disabled={loading}
+                style={{ flex: 1 }}
+              >
+                {loading ? 'Updating...' : 'Update Profile'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Change Password Modal */}
       {showChangePassword && (

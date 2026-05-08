@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { UserPlus, ToggleLeft, ToggleRight, QrCode, Printer, Phone, Mail, Building2, Edit2, Calendar, Users, AlertTriangle, CheckCircle, Clock, DollarSign, HelpCircle } from 'lucide-react';
+import { UserPlus, ToggleLeft, ToggleRight, QrCode, Printer, Phone, Mail, Building2, Edit2, Calendar, Users, AlertTriangle, CheckCircle, Clock, DollarSign, HelpCircle, Key, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 import { avt } from '../../utils/api';
 import { toast } from '../../components/Toast';
@@ -13,11 +13,14 @@ export default function SuperAdminPanel() {
   const [subscription, setSubscription] = useState({});
   const [form, setForm] = useState(emptyForm);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [qrAdmin, setQrAdmin] = useState(null);
   const [editAdmin, setEditAdmin] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [rejectionModal, setRejectionModal] = useState(null);
   const [accountFilter, setAccountFilter] = useState('all'); // 'all', 'demo', 'paid'
+  const [passwordModal, setPasswordModal] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
 
   const load = async () => {
     try {
@@ -126,6 +129,34 @@ export default function SuperAdminPanel() {
     }
   };
 
+  const openPasswordModal = (admin) => {
+    setPasswordModal(admin);
+    setPasswordForm({ newPassword: '', confirmPassword: '' });
+  };
+
+  const changePassword = async () => {
+    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+      return toast('Please fill all fields');
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return toast('Passwords do not match');
+    }
+    if (passwordForm.newPassword.length < 6) {
+      return toast('Password must be at least 6 characters');
+    }
+    
+    try {
+      await api.put(`/superadmin/admins/${passwordModal._id}/password`, {
+        newPassword: passwordForm.newPassword
+      });
+      toast('Password changed successfully ✓');
+      setPasswordModal(null);
+      load();
+    } catch (e) {
+      toast(e.response?.data?.message || 'Error changing password');
+    }
+  };
+
   const showRejectionDetails = (admin) => {
     setRejectionModal(admin);
   };
@@ -228,6 +259,7 @@ export default function SuperAdminPanel() {
             onEdit={openEditAdmin}
             onRequestPaid={requestPaidAccount}
             onShowRejection={showRejectionDetails}
+            onChangePassword={openPasswordModal}
             getDaysLeft={getDaysLeft}
           />
         ))}
@@ -267,11 +299,23 @@ export default function SuperAdminPanel() {
           onClose={() => setRejectionModal(null)}
         />
       )}
+
+      {/* Change Password Modal */}
+      {passwordModal && (
+        <ChangePasswordModal 
+          admin={passwordModal}
+          form={passwordForm}
+          setForm={setPasswordForm}
+          onSave={changePassword}
+          onClose={() => setPasswordModal(null)}
+        />
+      )}
     </>
   );
 }
 
-function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRejection, getDaysLeft }) {
+function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRejection, onChangePassword, getDaysLeft }) {
+  const [showPassword, setShowPassword] = useState(false);
   const daysLeft = getDaysLeft(admin.validUntil);
   const isExpired = admin.isExpired || daysLeft <= 0;
 
@@ -310,6 +354,20 @@ function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRej
           <span style={{ fontWeight: 600 }}>{admin.email || 'Not provided'}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span>Password:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>
+              {showPassword ? (admin.plainPassword || '••••••') : '••••••'}
+            </span>
+            <button 
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+            >
+              {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+            </button>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span>Max Employees:</span>
           <span style={{ fontWeight: 600 }}>{admin.maxEmployees}</span>
         </div>
@@ -345,6 +403,9 @@ function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRej
         </button>
         <button className="btn btn-sm" onClick={() => onEdit(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <Edit2 size={13} />Edit
+        </button>
+        <button className="btn btn-sm" onClick={() => onChangePassword(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Key size={13} />Password
         </button>
         {admin.accountType === 'demo' && !admin.renewalRequested && (
           <button className="btn btn-sm btn-warning" onClick={() => onRequestPaid(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -674,6 +735,72 @@ function RejectionModal({ admin, onClose }) {
         
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <button className="btn btn-primary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChangePasswordModal({ admin, form, setForm, onSave, onClose }) {
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  return (
+    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400 }}>
+        <div className="modal-title">
+          Change Password - {admin.name}
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 8 }}>Company: {admin.companyName}</div>
+          <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 8 }}>Phone: {admin.phone}</div>
+          {admin.plainPassword && (
+            <div style={{ 
+              background: 'var(--accent-bg)', 
+              border: '1px solid var(--accent)', 
+              borderRadius: 4, 
+              padding: 8, 
+              fontSize: 12, 
+              marginBottom: 12
+            }}>
+              <strong>Current Password:</strong> <span style={{ fontFamily: 'monospace' }}>{admin.plainPassword}</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="form-group" style={{ marginBottom: 16 }}>
+          <label>New Password *</label>
+          <input 
+            className="form-inp" 
+            type="password" 
+            placeholder="Enter new password"
+            value={form.newPassword} 
+            onChange={e => set('newPassword', e.target.value)} 
+          />
+        </div>
+        
+        <div className="form-group" style={{ marginBottom: 16 }}>
+          <label>Confirm New Password *</label>
+          <input 
+            className="form-inp" 
+            type="password" 
+            placeholder="Confirm new password"
+            value={form.confirmPassword} 
+            onChange={e => set('confirmPassword', e.target.value)} 
+          />
+        </div>
+        
+        <div style={{ fontSize: 11, color: 'var(--ink2)', marginBottom: 16 }}>
+          • Password must be at least 6 characters long<br/>
+          • Admin will need to use the new password for login
+        </div>
+        
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" onClick={onSave} style={{ flex: 1 }}>
+            Change Password
+          </button>
+          <button className="btn" onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>
