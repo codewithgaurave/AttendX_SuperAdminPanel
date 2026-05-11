@@ -1,4 +1,4 @@
-# AttendanceX - SuperAdmin Portal
+# AttenZo - SuperAdmin Portal
 
 SuperAdmin portal for managing admins and their accounts.
 
@@ -24,7 +24,7 @@ npm run build
 ```
 
 ## Deployment
-This app should be deployed to `superadmin.attendx.com` subdomain.
+This app should be deployed to `superadmin.attenzo.com` subdomain.
 
 ## Role Access
 - Only SuperAdmin role users can access this portal
