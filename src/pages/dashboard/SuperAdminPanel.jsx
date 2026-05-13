@@ -89,11 +89,16 @@ export default function SuperAdminPanel() {
   };
 
   const requestPaidAccount = async (admin) => {
+    const isPaid = admin.accountType === 'paid';
     const isReRequest = admin.renewalRejected;
-    const title = isReRequest ? `Re-request Paid Account for ${admin.name}?` : `Request Paid Account for ${admin.name}?`;
-    const text = isReRequest 
-      ? `Previous request was rejected. Reason: "${admin.renewalRejectionReason || 'No reason provided'}". Send a new request?`
-      : 'This will send a request to Master Admin to upgrade this account to paid.';
+    const title = isPaid 
+      ? `Request Validity Extension for ${admin.name}?`
+      : isReRequest ? `Re-request Paid Account for ${admin.name}?` : `Request Paid Account for ${admin.name}?`;
+    const text = isPaid
+      ? 'This will send a request to Master Admin to extend the validity of this paid account.'
+      : isReRequest 
+        ? `Previous request was rejected. Reason: "${admin.renewalRejectionReason || 'No reason provided'}". Send a new request?`
+        : 'This will send a request to Master Admin to upgrade this account to paid.';
     
     const result = await Swal.fire({
       title,
@@ -102,7 +107,7 @@ export default function SuperAdminPanel() {
       showCancelButton: true,
       confirmButtonColor: '#c84b2f',
       cancelButtonColor: '#5a5248',
-      confirmButtonText: isReRequest ? 'Send New Request' : 'Send Request',
+      confirmButtonText: isPaid ? 'Send Extension Request' : isReRequest ? 'Send New Request' : 'Send Request',
       background: '#faf7f2',
       color: '#1a1612',
     });
@@ -111,7 +116,7 @@ export default function SuperAdminPanel() {
     
     try {
       await api.post(`/superadmin/admins/${admin._id}/request-paid`);
-      toast(isReRequest ? 'New paid account request sent ✓' : 'Paid account request sent to Master Admin ✓');
+      toast(isPaid ? 'Validity extension request sent ✓' : isReRequest ? 'New paid account request sent ✓' : 'Paid account request sent to Master Admin ✓');
       load();
     } catch (e) {
       toast(e.response?.data?.message || 'Error sending request');
@@ -401,9 +406,11 @@ function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRej
         <button className="btn btn-sm" onClick={() => onShowQR(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <QrCode size={13} />QR
         </button>
-        <button className="btn btn-sm" onClick={() => onEdit(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <Edit2 size={13} />Edit
-        </button>
+        {admin.accountType !== 'paid' && (
+          <button className="btn btn-sm" onClick={() => onEdit(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Edit2 size={13} />Edit
+          </button>
+        )}
         <button className="btn btn-sm" onClick={() => onChangePassword(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <Key size={13} />Password
         </button>
@@ -415,6 +422,11 @@ function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRej
         {admin.accountType === 'demo' && admin.renewalRejected && (
           <button className="btn btn-sm btn-warning" onClick={() => onRequestPaid(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             🔄 Request Again
+          </button>
+        )}
+        {admin.accountType === 'paid' && (
+          <button className="btn btn-sm btn-warning" onClick={() => onRequestPaid(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            📅 Request Extension
           </button>
         )}
         <button 
