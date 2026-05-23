@@ -464,7 +464,7 @@ function CreateAdminModal({ form, setForm, onSave, onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: 500 }}>
         <div className="modal-title">Create Admin <button className="modal-close" onClick={onClose}>✕</button></div>
         
@@ -589,8 +589,8 @@ function QRModal({ admin, onClose }) {
   };
 
   return (
-    <div className="modal-overlay active" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay active">
+      <div className="modal" style={{ maxWidth: 420, textAlign: 'center' }}>
         <div className="modal-title">{admin.name} — QR Code <button className="modal-close" onClick={onClose}>✕</button></div>
         <div style={{ display: 'inline-block', padding: 20, border: '2px solid var(--ink)', borderRadius: 4, background: '#fff', marginBottom: 16 }}>
           <QRCodeSVG 
@@ -620,7 +620,7 @@ function EditAdminModal({ admin, form, setForm, onSave, onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: 500 }}>
         <div className="modal-title">
           Edit {admin.name} Settings
@@ -692,7 +692,7 @@ function EditAdminModal({ admin, form, setForm, onSave, onClose }) {
 
 function RejectionModal({ admin, onClose }) {
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: 500 }}>
         <div className="modal-title">
           Renewal Request Rejected - {admin.name}
@@ -757,7 +757,7 @@ function ChangePasswordModal({ admin, form, setForm, onSave, onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: 400 }}>
         <div className="modal-title">
           Change Password - {admin.name}
