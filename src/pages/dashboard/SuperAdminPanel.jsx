@@ -81,10 +81,14 @@ export default function SuperAdminPanel() {
   const openEditAdmin = (admin) => {
     setEditAdmin(admin);
     setEditForm({
-      validUntil: admin.validUntil.slice(0, 10),
-      maxEmployees: admin.maxEmployees,
-      maxOffices: admin.maxOffices,
-      accountType: admin.accountType
+      name: admin.name || '',
+      companyName: admin.companyName || '',
+      phone: admin.phone || '',
+      email: admin.email || '',
+      validUntil: admin.validUntil ? admin.validUntil.slice(0, 10) : '',
+      maxEmployees: admin.maxEmployees || 5,
+      maxOffices: admin.maxOffices || 1,
+      accountType: admin.accountType || 'demo'
     });
   };
 
@@ -124,9 +128,12 @@ export default function SuperAdminPanel() {
   };
 
   const saveEditAdmin = async () => {
+    if (!editForm.name || !editForm.phone || !editForm.companyName) {
+      return toast('Fill all required fields');
+    }
     try {
-      await api.put(`/superadmin/admins/${editAdmin._id}/subscription`, editForm);
-      toast('Admin settings updated ✓');
+      await api.put(`/superadmin/admins/${editAdmin._id}`, editForm);
+      toast('Admin details updated ✓');
       setEditAdmin(null);
       load();
     } catch (e) {
@@ -406,11 +413,9 @@ function AdminCard({ admin, onToggle, onShowQR, onEdit, onRequestPaid, onShowRej
         <button className="btn btn-sm" onClick={() => onShowQR(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <QrCode size={13} />QR
         </button>
-        {admin.accountType !== 'paid' && (
-          <button className="btn btn-sm" onClick={() => onEdit(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <Edit2 size={13} />Edit
-          </button>
-        )}
+        <button className="btn btn-sm" onClick={() => onEdit(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Edit2 size={13} />Edit
+        </button>
         <button className="btn btn-sm" onClick={() => onChangePassword(admin)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <Key size={13} />Password
         </button>
@@ -623,14 +628,30 @@ function EditAdminModal({ admin, form, setForm, onSave, onClose }) {
     <div className="modal-overlay active">
       <div className="modal" style={{ maxWidth: 500 }}>
         <div className="modal-title">
-          Edit {admin.name} Settings
+          Edit Admin Details
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 8 }}>Company: {admin.companyName}</div>
-          <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 8 }}>Phone: {admin.phone}</div>
-          <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 8 }}>Email: {admin.email || 'Not provided'}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div className="form-group">
+            <label>Full Name *</label>
+            <input className="form-inp" value={form.name} onChange={e => set('name', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>Company Name *</label>
+            <input className="form-inp" value={form.companyName} onChange={e => set('companyName', e.target.value)} />
+          </div>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div className="form-group">
+            <label>Phone Number *</label>
+            <input className="form-inp" type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>Email (Optional)</label>
+            <input className="form-inp" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+          </div>
         </div>
         
         <div className="form-group" style={{ marginBottom: 16 }}>
@@ -648,8 +669,9 @@ function EditAdminModal({ admin, form, setForm, onSave, onClose }) {
             <label>Account Type</label>
             <select className="form-inp" value={form.accountType} onChange={e => set('accountType', e.target.value)} disabled>
               <option value="demo">Demo Account</option>
+              <option value="paid">Paid Account</option>
             </select>
-            <div style={{ fontSize: 11, color: 'var(--ink2)', marginTop: 4 }}>Contact Master Admin for Paid accounts</div>
+            <div style={{ fontSize: 11, color: 'var(--ink2)', marginTop: 4 }}>Contact Master Admin for upgrades</div>
           </div>
           <div className="form-group">
             <label>Max Employees *</label>
@@ -676,13 +698,13 @@ function EditAdminModal({ admin, form, setForm, onSave, onClose }) {
         </div>
         
         <div style={{ background: 'var(--surface2)', padding: 12, borderRadius: 4, marginBottom: 16, fontSize: 12, color: 'var(--ink2)' }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Current Usage:</div>
-          <div>• Account expires: {new Date(admin.validUntil).toLocaleDateString()}</div>
-          <div>• Days left: {Math.max(0, Math.ceil((new Date(admin.validUntil) - new Date()) / (1000 * 60 * 60 * 24)))} days</div>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>Current Status:</div>
+          <div>• Original Expiry: {new Date(admin.validUntil).toLocaleDateString()}</div>
+          <div>• Days Left: {Math.max(0, Math.ceil((new Date(admin.validUntil) - new Date()) / (1000 * 60 * 60 * 24)))} days</div>
         </div>
         
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary" onClick={onSave} style={{ flex: 1 }}>Update Settings</button>
+          <button className="btn btn-primary" onClick={onSave} style={{ flex: 1 }}>Update Details</button>
           <button className="btn" onClick={onClose}>Cancel</button>
         </div>
       </div>
